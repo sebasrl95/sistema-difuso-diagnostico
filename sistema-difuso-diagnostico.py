@@ -1,40 +1,95 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 
-# Definición de las variables de entrada (sintomas)
-fiebre = ctrl.Antecedent(np.arange(0, 41, 1), 'fiebre')
-dolor_cabeza = ctrl.Antecedent(np.arange(0, 11, 1), 'dolor_cabeza')
-tos = ctrl.Antecedent(np.arange(0, 11, 1), 'tos')
-nausea = ctrl.Antecedent(np.arange(0, 11, 1), 'nausea')
-dolor_abdominal = ctrl.Antecedent(np.arange(0, 11, 1), 'dolor_abdominal')
+# Crear las variables difusas
+sintomas = ctrl.Antecedent(np.arange(0, 11, 1), 'sintomas')
+diagnostico = ctrl.Consequent(np.arange(0, 11, 1), 'diagnostico')
 
-# Definición de la variable de salida (diagnostico)
-diagnostico = ctrl.Consequent(np.arange(0, 101, 1), 'diagnostico')
+# Definir las funciones de membresía para síntomas
+sintomas['bajo'] = fuzz.trimf(sintomas.universe, [0, 0, 5])
+sintomas['medio'] = fuzz.trimf(sintomas.universe, [0, 5, 10])
+sintomas['alto'] = fuzz.trimf(sintomas.universe, [5, 10, 10])
 
-# Definición de las funciones de pertenencia para los síntomas
-fiebre['leve'] = fuzz.trimf(fiebre.universe, [0, 0, 37])
-fiebre['moderado'] = fuzz.trimf(fiebre.universe, [36, 37, 39])
-fiebre['severo'] = fuzz.trimf(fiebre.universe, [38, 40, 40])
+# Definir las funciones de membresía para diagnóstico
+diagnostico['gripe'] = fuzz.trimf(diagnostico.universe, [0, 0, 5])
+diagnostico['resfriado'] = fuzz.trimf(diagnostico.universe, [0, 5, 10])
+diagnostico['migraña'] = fuzz.trimf(diagnostico.universe, [0, 5, 10])
+diagnostico['saludable'] = fuzz.trimf(diagnostico.universe, [5, 10, 10])
+# Añadir más diagnósticos según sea necesario
 
-dolor_cabeza['leve'] = fuzz.trimf(dolor_cabeza.universe, [0, 0, 3])
-dolor_cabeza['moderado'] = fuzz.trimf(dolor_cabeza.universe, [2, 5, 8])
-dolor_cabeza['severo'] = fuzz.trimf(dolor_cabeza.universe, [7, 10, 10])
+# Definir las reglas difusas
+regla1 = ctrl.Rule(sintomas['alto'], diagnostico['gripe'])
+regla2 = ctrl.Rule(sintomas['medio'], diagnostico['resfriado'])
+regla3 = ctrl.Rule(sintomas['bajo'], diagnostico['saludable'])
+# Añadir más reglas según sea necesario
 
-tos['leve'] = fuzz.trimf(tos.universe, [0, 0, 3])
-tos['moderado'] = fuzz.trimf(tos.universe, [2, 5, 8])
-tos['severo'] = fuzz.trimf(tos.universe, [7, 10, 10])
+# Crear el sistema de control difuso
+diagnostico_ctrl = ctrl.ControlSystem([regla1, regla2, regla3])
+diagnostico_simulador = ctrl.ControlSystemSimulation(diagnostico_ctrl)
 
-nausea['leve'] = fuzz.trimf(nausea.universe, [0, 0, 3])
-nausea['moderado'] = fuzz.trimf(nausea.universe, [2, 5, 8])
-nausea['severo'] = fuzz.trimf(nausea.universe, [7, 10, 10])
+# Proporcionar datos de entrada
+def diagnosticar(fiebre, dolor_cabeza, tos, estornudos, nausea, vomito, diarrea, mareo, falta_aire, dolor_oido, perdida_audicion, dolor_pecho, dolor_abdominal, ardor_estomago, picazon_ojo, nariz_congestionada, perdida_olfato, perdida_gusto, congestion_nasal, dolor_facial, palpitaciones, perdida_equilibrio):
+    sintomas_input = {
+        'fiebre': fiebre,
+        'dolor_cabeza': dolor_cabeza,
+        'tos': tos,
+        'estornudos': estornudos,
+        'nausea': nausea,
+        'vomito': vomito,
+        'diarrea': diarrea,
+        'mareo': mareo,
+        'falta_aire': falta_aire,
+        'dolor_oido': dolor_oido,
+        'perdida_audicion': perdida_audicion,
+        'dolor_pecho': dolor_pecho,
+        'dolor_abdominal': dolor_abdominal,
+        'ardor_estomago': ardor_estomago,
+        'picazon_ojo': picazon_ojo,
+        'nariz_congestionada': nariz_congestionada,
+        'perdida_olfato': perdida_olfato,
+        'perdida_gusto': perdida_gusto,
+        'congestion_nasal': congestion_nasal,
+        'dolor_facial': dolor_facial,
+        'palpitaciones': palpitaciones,
+        'perdida_equilibrio': perdida_equilibrio
+    }
 
-dolor_abdominal['leve'] = fuzz.trimf(dolor_abdominal.universe, [0, 0, 3])
-dolor_abdominal['moderado'] = fuzz.trimf(dolor_abdominal.universe, [2, 5, 8])
-dolor_abdominal['severo'] = fuzz.trimf(dolor_abdominal.universe, [7, 10, 10])
+    sintoma_total = np.mean(list(sintomas_input.values()))
 
-# Definición de las funciones de pertenencia para el diagnóstico
-diagnostico['Saludable'] = fuzz.trimf(diagnostico.universe, [0, 0, 25])
-diagnostico['Leve'] = fuzz.trimf(diagnostico.universe, [20, 40, 60])
-diagnostico['Moderado'] = fuzz.trimf(diagnostico.universe, [50, 70, 90])
-diagnostico['Severo'] = fuzz.trimf(diagnostico.universe, [80, 100, 100])
+    # Establecer las entradas
+    diagnostico_simulador.input['sintomas'] = sintoma_total
+
+    # Ejecutar la simulación
+    diagnostico_simulador.compute()
+
+    # Obtener los resultados
+    return diagnostico_simulador.output['diagnostico']
+
+# Ejemplo de uso
+resultado = diagnosticar(8, 6, 7, 2, 1, 0, 0, 3, 5, 0, 1, 4, 2, 0, 0, 1, 0, 0, 0, 1, 2)
+
+# Visualización
+# Graficar las funciones de membresía
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Graficar síntomas
+ax.plot(sintomas.universe, sintomas['bajo'], label='Bajo', color='blue')
+ax.plot(sintomas.universe, sintomas['medio'], label='Medio', color='green')
+ax.plot(sintomas.universe, sintomas['alto'], label='Alto', color='red')
+
+# Graficar diagnóstico
+ax.plot(diagnostico.universe, diagnostico['gripe'], label='Gripe', color='cyan', linestyle='--')
+ax.plot(diagnostico.universe, diagnostico['resfriado'], label='Resfriado', color='magenta', linestyle='--')
+ax.plot(diagnostico.universe, diagnostico['migraña'], label='Migraña', color='yellow', linestyle='--')
+ax.plot(diagnostico.universe, diagnostico['saludable'], label='Saludable', color='black', linestyle='--')
+
+# Configurar gráficos
+ax.set_title('Sistema Difuso de Diagnóstico Médico')
+ax.set_xlabel('Grado de Síntoma')
+ax.set_ylabel('Grado de Membresía')
+ax.legend(loc='upper right')
+
+# Mostrar gráfico
+plt.show()
